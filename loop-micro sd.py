@@ -13,25 +13,31 @@ Antes de correr se deben modificar:
 @author: juan
 """
 
+import numpy as np
 import glob
 from subprocess import call
-import time
+#import time
 import sys
+import os
 from scipy.io import wavfile
 from datetime import datetime, timedelta
 from shutil import copy2
 
-os.chdir('/home/juan/Documentos/Campo/Code/')
-folder = os.getcwd() #Nombre de la carpeta donde esta el .py
+os.chdir('/home/juan/Documentos/Campo/Code/')       # Depende de la computadora
+folder = os.getcwd()                                #Nombre de la carpeta donde esta el .py
 
-ave = 'Test'    # Nombre del ave
-side = 'left'   # Lado de insercion electrodos
-año = 2017      # Datos de momento de inicio de la medicion
+ave = 'Test2'       # Nombre del ave
+side = 'none'       # Lado de insercion electrodos
+                    # Si queda en 'none' NO SE CREAN WAVS DEL CANAL 2
+año = 2017          # Datos de momento de inicio de la medicion
 mes = 8
 dia = 31
-hour = 13
-minuto = 26
+hour = 14
+minuto = 32
 segundos = 00
+
+ttot = 60                       # Tiempo total de medicion en segundos
+
 time_obj = datetime(int(año), int(mes), int(dia), int(hour), int(minuto), int(segundos))
 
 fecha = time_obj.strftime("%d-%m-%Y")
@@ -50,9 +56,8 @@ tmed  = 400.0 * 128.0 /frec_adq # Duracion de cada medicion:
                                 # Se miden 2 canales -> 256 bytes por sector para c/u
                                 # Cada med = 10bits -> 2 bytes -> 128 mediciones por canal por sector
                                 # Cada medicion es de 400 sectores -> 400*128 = #total de mediciones por canal
-ttot = 60                       # Tiempo total de medicion en segundos
 fin = time_obj + timedelta(seconds = ttot)
-cantidad = int(ttot/tmed)       # Cantidad de mediciones. Este valor se debe modificar. IMPORTANTE
+cantidad = int(ttot/tmed)       # Cantidad de mediciones.
 
 programa = 'read'               # Programa compilado a partir de readSd.c
 destino_raw = os.path.join(os.path.dirname(folder),'Data',ave + '_' + fecha + '_' + hora + '-raw')
@@ -60,7 +65,7 @@ destino_wavs = os.path.join(os.path.dirname(folder),'Data',ave + '_' + fecha + '
 
 try:
     os.makedirs(destino_raw)
-    os.mkdir(destino_wavs)
+    os.makedirs(destino_wavs)
 except:
     # Si el destino ya existe puede que se corra peligro de sobreescribir datos
     end = input('Alguno de los directorios de destino ya existe. Continuar? [s/n]\n')
@@ -94,8 +99,9 @@ for j in range(cantidad):
     wavname_s = ave + '_' + date + '_' + hms + '_sonido.wav'
     wavname_vs = ave + '_' + date + '_' + hms + '_vs' + side + '.wav'
     # Los guardo como vienen, SIN NORMALIZAR
-    wavfile.write(os.path.join(destino_wavs,wavname_s),int(frec_adq),np.asarray(sonido-mean(sonido), dtype = np.int16))
-    wavfile.write(os.path.join(destino_wavs,wavname_vs),int(frec_adq),np.asarray(vs-mean(vs), dtype = np.int16))
+    wavfile.write(os.path.join(destino_wavs,wavname_s),int(frec_adq),np.asarray(sonido-np.mean(sonido), dtype = np.int16))
+    if side != 'none':
+        wavfile.write(os.path.join(destino_wavs,wavname_vs),int(frec_adq),np.asarray(vs-np.mean(vs), dtype = np.int16))
     
     if len(dat_file) > 2:
         # Paranoiqueo que pasa si no encuentra dec.dat
