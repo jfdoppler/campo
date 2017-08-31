@@ -1,0 +1,9 @@
+Para leer archivos de la tarjeta micro sd:
+
+1) Correr el comando 
+sudo dd if=/dev/sdb of=~/Escritorio/output.raw
+2) Se corta con Ctrl-C (no hay control de cuando se corta), o se deja completar toda la tarjeta.
+3) Compilar readSd.c gcc readSd.c -lm -o read. Es importante que se compile en la computadora donde se va a usar o tira error de permisos.
+4) Copiar read y output.raw en una carpeta
+5) Correr loop-micro sd.py
+Este py llama al programa read (que lee una medicion = 400 sectores) consecutivamente y guarda los datos en archivos separados medicionx.
