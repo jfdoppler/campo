@@ -20,33 +20,28 @@ Transformo en decimal, multiplico el msb por 4 (por los 2 bits que lo habia corr
 // 512 bytes = 1 sector = 256 bytes/canal = 128 datos/canal (10 bits por dato)
 // A 8kHz/canal 1 sector = 16ms
 // 400 sectores = 1 medicion = 6,4 segundos
+// El 400 viene del programa de adquisicion del MSP430
 int i;
 char *can; //Para diferenciar si se grabo 1 canal o 2
 char aux_sector[10];
 // Read from one sector
 int main(int argc, char *argv[]){
     char *letras;       // Numero de medicion
-    letras = argv[1];
-    //printf("%s\n",letras);
-    //printf("1 canal = 1\n2 canales = 2\nCuantos canales se grabaron? ");
-    //scanf("%s",can);
-    can = "2";         // Cantidad de canales
-    FILE *volume;      // Origen
-    FILE *out_hex;     // Datos en hex
-    FILE *out_dec;     // Datos en dec
+    letras = argv[1];   // Sector inicial
+    can = "2";          // Cantidad de canales
+    FILE *volume;       // Origen
+    FILE *out_hex;      // Datos en hex
+    FILE *out_dec;      // Datos en dec
     int k = 0;
     long long sector;
     char buf[BUFFER_SIZE] = {0};
     
-    //for(sector = 0;sector<1;sector++){ //No hace falta este loop
-    //printf("1 sector = 512 bytes = 256 datos = 16 ms (dos canales) o 32 ms (un canal) \n1 minuto = 3750 sectores, 1 hora = 225000 sectores\nLeer a partir del sector: ");
-    //scanf("%s",aux_sector);
     sprintf(aux_sector,"%s",letras);
-    sector = atol(aux_sector);      // Numero de sector inicial
-    //volume = fopen("\\\\.\\E:", "r");
-    //volume = fopen("ejemplo1.IMA", "r");
-    volume = fopen("output.raw", "r");
-    setbuf(volume, NULL);       // Disable buffering
+    sector = atol(aux_sector);              // Numero de sector inicial
+    //volume = fopen("\\\\.\\E:", "r");     // Leer directo de tarjeta
+    //volume = fopen("ejemplo1.IMA", "r");  // Leer desde un archivo (simulacion)
+    volume = fopen("output.raw", "r");      // Leer desde archivo raw
+    setbuf(volume, NULL);                   // Disable buffering
     if(!volume){
         printf("Cant open Drive\n");
         return 1;
@@ -55,7 +50,6 @@ int main(int argc, char *argv[]){
         printf("Can't move to sector\n");
         return 2;
     }
-    // read what is in sector and put in buf
     // Lee BUFFER_SIZE cantidad de datos y los guarda en buf
     fread(buf, sizeof(*buf), BUFFER_SIZE, volume);
     fclose(volume);
@@ -93,12 +87,11 @@ int main(int argc, char *argv[]){
         }else{
             char *aux_2 = &aux[len-2];  //Me quedo con los 2 digitos que importan
             strncpy(aux_msb,aux_2,1);   //Los dos primeros son los msb
-            //aux_msb[2] = '\0';
             aux_msb[1] = '\0';
         }
-        char *aux_lsb = &aux[len-1]; //El ultimo digito es el lsb
-        valor_msb = pow(2,2)*strtol(aux_msb,&pEnd,16); //Paso de hex a decimal y hago bitshift
-        valor_lsb = strtol(aux_lsb,&pEnd,16);  //Paso de hex a decimal
+        char *aux_lsb = &aux[len-1];                    //El ultimo digito es el lsb
+        valor_msb = pow(2,2)*strtol(aux_msb,&pEnd,16);  //Paso de hex a decimal y hago bitshift
+        valor_lsb = strtol(aux_lsb,&pEnd,16);           //Paso de hex a decimal
         valor = valor_msb+valor_lsb;
         if(j){
             fprintf(out_dec,"%ld\t",valor);
