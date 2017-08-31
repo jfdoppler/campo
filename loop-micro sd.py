@@ -19,8 +19,9 @@ import time
 import sys
 from scipy.io import wavfile
 from datetime import datetime, timedelta
+from shutil import copy2
 
-os.chdir('/home/juan/Documentos/Campo/Data/')
+os.chdir('/home/juan/Documentos/Campo/Code/')
 folder = os.getcwd() #Nombre de la carpeta donde esta el .py
 
 ave = 'Test'    # Nombre del ave
@@ -49,16 +50,16 @@ tmed  = 400.0 * 128.0 /frec_adq # Duracion de cada medicion:
                                 # Se miden 2 canales -> 256 bytes por sector para c/u
                                 # Cada med = 10bits -> 2 bytes -> 128 mediciones por canal por sector
                                 # Cada medicion es de 400 sectores -> 400*128 = #total de mediciones por canal
-ttot = 10*60                       # Tiempo total de medicion en segundos
+ttot = 60                       # Tiempo total de medicion en segundos
 fin = time_obj + timedelta(seconds = ttot)
 cantidad = int(ttot/tmed)       # Cantidad de mediciones. Este valor se debe modificar. IMPORTANTE
 
 programa = 'read'               # Programa compilado a partir de readSd.c
-destino_raw = os.path.join(folder,ave + '_' + fecha + '_' + hora + '-raw')
-destino_wavs = os.path.join(folder,ave + '_' + fecha + '_' + hora + '-wavs')
+destino_raw = os.path.join(os.path.dirname(folder),'Data',ave + '_' + fecha + '_' + hora + '-raw')
+destino_wavs = os.path.join(os.path.dirname(folder),'Data',ave + '_' + fecha + '_' + hora + '-wavs')
 
 try:
-    os.mkdir(destino_raw)
+    os.makedirs(destino_raw)
     os.mkdir(destino_wavs)
 except:
     # Si el destino ya existe puede que se corra peligro de sobreescribir datos
@@ -81,14 +82,9 @@ time = datetime(int(año), int(mes), int(dia), int(hour), int(minuto), int(segun
 dp = 10
 porcentaje = dp
 for j in range(cantidad):
-    completion = j/cantidad*100
-    if completion > porcentaje:
-        print('%.0f%% completado ( = %.0f mediciones)' %tuple((porcentaje,j)))
-        porcentaje += dp
     # Ejecuta el programa de lectura de 1 medicion (ie 400 sectores). La salida
     # del programa es un file dec.dat con los valores de los dos canales
     call(["./"+programa, str(int(j))]) #Agregar arg al programa?
-    
     dat_file = glob.glob(os.path.join(folder,'dec.dat'))[0]
     datos = np.loadtxt('dec.dat')
     sonido = [x[0] for x in datos]
@@ -107,3 +103,9 @@ for j in range(cantidad):
     
     time = time + timedelta(seconds = tmed)
     
+    completion = (j+1)/cantidad*100
+    if completion > porcentaje:
+        print('%.0f%% completado ( = %.0f mediciones)' %tuple((porcentaje,j+1)))
+        porcentaje += dp
+
+copy2('output.raw', destino_raw + '/' + ave + '_' + fecha + '_' + hora + '.raw')
