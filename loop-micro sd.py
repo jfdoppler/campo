@@ -16,7 +16,6 @@ Antes de correr se deben modificar:
 import numpy as np
 import glob
 from subprocess import call
-#import time
 import sys
 import os
 from scipy.io import wavfile
@@ -73,14 +72,12 @@ except:
         sys.exit(0)
 
 #Metadata
-meta = open('metadata.txt','a')
-meta.write('DATOS DE LA GRABACIÓN\nAve: '+ave+'\nGrabación continua de '+ canales +
-', canales a '+ str(int(frec_adq)) +' por canal, con resolución de '+ bits + ' bits\n')
-meta.write('\nCada medición dura '+ str(tmed)[:4] +' segundos\nInicio: '+inicio)
-meta.write('\nTiempo total de medición: '+ str(ttot) +' segundos = ' + str(ttot/3600)[:4] + ' horas.')
-meta.write('\nNúmero de mediciones: ' + str(cantidad))
-meta.write('\nHora fin:'+ fin.strftime("%d-%m-%Y %H:%M:%S"))
-meta.close()
+with open('metadata.txt','a') as meta:
+    print('DATOS DE LA GRABACIÓN\nAve: {}\nGrabación continua de {} canales a {}Hz por canal, con resolución de {} bits\n'.format(ave,canales,str(int(frec_adq)),bits), file = meta)
+    print('\nCada medición dura {} segundos\nInicio: {}'.format(str(tmed)[:4],inicio), file = meta)
+    print('\nTiempo total de medición: {} segundos = {} horas.'.format(str(ttot),str(ttot/3600)[:4]), file = meta)
+    print('\nNúmero de mediciones: {}'.format(str(cantidad)), file = meta)
+    print('\nHora fin:{}'.format(fin.strftime("%d-%m-%Y %H:%M:%S")), file = meta)
 os.rename('metadata.txt', destino_raw+'/metadata.txt')
 
 time = datetime(int(año), int(mes), int(dia), int(hour), int(minuto), int(segundos))
@@ -92,8 +89,8 @@ for j in range(cantidad):
     call(["./"+programa, str(int(j))]) #Agregar arg al programa?
     dat_file = glob.glob(os.path.join(folder,'dec.dat'))[0]
     datos = np.loadtxt('dec.dat')
-    sonido = [x[0] for x in datos]
-    vs = [x[1] for x in datos]
+    sonido = [x[1] for x in datos]
+    vs = [x[0] for x in datos]
     date = time.strftime("%d-%m-%Y")
     hms = time.strftime("%H:%M:%S")
     wavname_s = ave + '_' + date + '_' + hms + '_sonido.wav'
