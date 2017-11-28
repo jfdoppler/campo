@@ -7,7 +7,7 @@ Llama al programa de lectura de la tarjeta sd, de manera de levantar los datos.
 Antes de correr se deben modificar:
     - ave: nombre identificativo del ave
     - año, dia, mes, hour, minuto: Hora de inicio de la medicion
-    - ttot: tiempo total de medicion. Por defecto 7 horas.
+    - ttot: tiempo total de medicion.
     - dt_adq,tmed: SOLO SI SE HA MODIFICADO EL PROGRAMA DE GRABADO DE DATOS
 
 @author: juan
@@ -22,8 +22,17 @@ from scipy.io import wavfile
 from datetime import datetime, timedelta
 from shutil import copy2
 
+
+def normalize(arr):
+    norm = np.copy(np.asarray(arr))
+    norm -= min(norm)
+    norm /= max(norm)/2
+    norm -= 1
+    return norm
+
+#%%
 os.chdir('/home/juan/Documentos/Campo/Code/')       # Depende de la computadora
-folder = os.getcwd()                                #Nombre de la carpeta donde esta el .py
+folder = os.getcwd()                                # Nombre de la carpeta donde esta el .py
 
 ave = 'Test2'       # Nombre del ave
 side = 'none'       # Lado de insercion electrodos
@@ -78,7 +87,7 @@ with open('metadata.txt','a') as meta:
     print('\nTiempo total de medición: {} segundos = {} horas.'.format(str(ttot),str(ttot/3600)[:4]), file = meta)
     print('\nNúmero de mediciones: {}'.format(str(cantidad)), file = meta)
     print('\nHora fin:{}'.format(fin.strftime("%d-%m-%Y %H:%M:%S")), file = meta)
-os.rename('metadata.txt', destino_raw+'/metadata.txt')
+os.rename('metadata.txt', destino_raw + '/metadata.txt')
 
 time = datetime(int(año), int(mes), int(dia), int(hour), int(minuto), int(segundos))
 dp = 10
@@ -86,7 +95,7 @@ porcentaje = dp
 for j in range(cantidad):
     # Ejecuta el programa de lectura de 1 medicion (ie 400 sectores). La salida
     # del programa es un file dec.dat con los valores de los dos canales
-    call(["./"+programa, str(int(j))]) #Agregar arg al programa?
+    call(["./" + programa, str(int(j))]) #Agregar arg al programa?
     dat_file = glob.glob(os.path.join(folder,'dec.dat'))[0]
     datos = np.loadtxt('dec.dat')
     sonido = [x[1] for x in datos]
@@ -95,10 +104,11 @@ for j in range(cantidad):
     hms = time.strftime("%H:%M:%S")
     wavname_s = ave + '_' + date + '_' + hms + '_sonido.wav'
     wavname_vs = ave + '_' + date + '_' + hms + '_vs' + side + '.wav'
-    # Los guardo como vienen, SIN NORMALIZAR
-    wavfile.write(os.path.join(destino_wavs,wavname_s),int(frec_adq),np.asarray(sonido-np.mean(sonido), dtype = np.int16))
+    normalized_sound = normalize(sound)
+    wavfile.write(os.path.join(destino_wavs,wavname_s),int(frec_adq),np.asarray(normalized_sound, dtype=np.int32))
     if side != 'none':
-        wavfile.write(os.path.join(destino_wavs,wavname_vs),int(frec_adq),np.asarray(vs-np.mean(vs), dtype = np.int16))
+        # Los guardo como vienen, SIN NORMALIZAR
+        wavfile.write(os.path.join(destino_wavs,wavname_vs),int(frec_adq),np.asarray(vs-np.mean(vs), dtype=np.int16))
     
     if len(dat_file) > 2:
         # Paranoiqueo que pasa si no encuentra dec.dat
@@ -108,7 +118,7 @@ for j in range(cantidad):
     
     completion = (j+1)/cantidad*100
     if completion > porcentaje:
-        print('%.0f%% completado ( = %.0f mediciones)' %tuple((porcentaje,j+1)))
+        print('{:.0f}%% completado ( = {:.0f} mediciones)'.format(porcentaje,j+1))
         porcentaje += dp
 
 copy2('output.raw', destino_raw + '/' + ave + '_' + fecha + '_' + hora + '.raw')
